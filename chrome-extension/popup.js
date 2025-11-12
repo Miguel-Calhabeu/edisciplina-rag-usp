@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Show result
       if (response.success) {
         let displayMessage = response.message;
-        
+
         // Add helpful tips for partial downloads
         if (response.message.includes('0 file download')) {
           displayMessage += '\n\n💡 Tip: Check the browser console (F12) for detailed error messages.';
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
           displayMessage += '\n\n✓ Downloads initiated! Check your Downloads folder.';
         }
-        
+
         statusDiv.textContent = displayMessage;
         statusDiv.classList.add('success');
       } else {

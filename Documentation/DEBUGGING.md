@@ -14,7 +14,7 @@ To see what the extension is doing:
 
 1. **For Content Script Logs** (runs on course pages):
    - Go to an e-Disciplinas course page
-   - Press `F12` to open DevTools  
+   - Press `F12` to open DevTools
    - Go to the "Console" tab
    - Look for messages starting with `[e-Disciplinas]`
    - These show: file detection, URL extraction, download status
@@ -81,28 +81,28 @@ The extension tries 9 different strategies to extract the actual file URL:
 
 1. **Strategy 1**: Direct pluginfile URL after redirects
    - Works when: Browser auto-follows redirect to file
-   
+
 2. **Strategy 2**: Full URL with protocol in HTML
    - Works when: HTML has `https://edisciplinas.usp.br/pluginfile.php/...`
-   
+
 3. **Strategy 3**: Relative pluginfile URL
    - Works when: HTML has `/pluginfile.php/...` without protocol
-   
+
 4. **Strategy 4**: Meta refresh tag
    - Works when: Page uses `<meta http-equiv="refresh">`
-   
+
 5. **Strategy 5**: JavaScript redirect
    - Works when: Page uses `location.href = ...`
-   
+
 6. **Strategy 6**: Data attributes
    - Works when: URL is in `data-*` attributes
-   
+
 7. **Strategy 7**: Anchor tags
-   - Works when: HTML has `<a href="...pluginfile...">` 
-   
+   - Works when: HTML has `<a href="...pluginfile...">`
+
 8. **Strategy 8**: Direct file extensions
    - Works when: HTML references `.pdf`, `.docx`, etc.
-   
+
 9. **Strategy 9**: Any pluginfile URL (lenient)
    - Fallback: Looks for pluginfile in any format
 

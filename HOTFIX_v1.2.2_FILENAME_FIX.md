@@ -1,7 +1,7 @@
 # v1.2.2 Critical Hotfix - Filename Sanitization
 
-**Version**: 1.2.2  
-**Type**: CRITICAL Bug Fix  
+**Version**: 1.2.2
+**Type**: CRITICAL Bug Fix
 **Severity**: High - Prevents downloads with special characters
 
 ## The Issue
@@ -80,7 +80,7 @@ After updating to v1.2.2, all 18 files should download! ✅
 
 ---
 
-**Status**: ✅ Production Ready  
-**Next Version**: v1.2.2  
+**Status**: ✅ Production Ready
+**Next Version**: v1.2.2
 **All Issues Resolved**: Yes!
 

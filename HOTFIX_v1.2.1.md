@@ -1,7 +1,7 @@
 # v1.2.1 Hotfix Release
 
-**Version**: 1.2.1  
-**Type**: Critical Bug Fix  
+**Version**: 1.2.1
+**Type**: Critical Bug Fix
 **Date**: November 2025
 
 ## Issues Fixed
@@ -90,6 +90,6 @@ If you still experience issues:
 
 ---
 
-**Status**: ✅ Production Ready  
+**Status**: ✅ Production Ready
 **Commits**: 2 (bug fixes + version bump)
 

@@ -12,14 +12,14 @@ async function testFetch(url) {
   try {
     console.log(`\n\n========== Testing: ${url} ==========`);
     const response = await fetch(url, { redirect: 'follow' });
-    
+
     console.log(`Status: ${response.status}`);
     console.log(`Final URL: ${response.url}`);
     console.log(`Content-Type: ${response.headers.get('content-type')}`);
-    
+
     const html = await response.text();
     console.log(`HTML length: ${html.length}`);
-    
+
     // Check for pluginfile URLs
     const pluginMatch = html.match(/(https:\/\/edisciplinas\.usp\.br\/pluginfile\.php\/[^"'\s<>()]+)/i);
     if (pluginMatch) {

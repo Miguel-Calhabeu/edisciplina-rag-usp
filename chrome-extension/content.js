@@ -210,13 +210,13 @@
     // Remove invalid filename characters
     // Replace colons, parentheses, asterisks, question marks, quotes, pipes, angle brackets
     let sanitized = filename.replace(/[:<>"|?*()]/g, '');
-    
+
     // Replace common problematic patterns
     sanitized = sanitized.replace(/[\\/]/g, '-'); // Replace slashes with dash
     sanitized = sanitized.replace(/\s+/g, '_');   // Spaces to underscores
     sanitized = sanitized.replace(/_+/g, '_');    // Remove multiple underscores
     sanitized = sanitized.replace(/^_|_$/g, '');  // Remove leading/trailing underscores
-    
+
     return sanitized || 'file';
   }
 
