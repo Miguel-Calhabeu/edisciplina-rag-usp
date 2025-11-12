@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "e-Disciplinas File Downloader",
+  "version": "1.1",
+  "description": "Download all files from e-Disciplinas course pages with custom organization",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "downloads",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://edisciplinas.usp.br/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png",
+    "default_title": "e-Disciplinas File Downloader"
+  },
+  "options_page": "settings.html",
+  "content_scripts": [
+    {
+      "matches": ["https://edisciplinas.usp.br/course/view.php*"],
+      "js": ["content.js"]
+    }
+  ]
+}

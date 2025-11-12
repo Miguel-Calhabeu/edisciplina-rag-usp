@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>e-Disciplinas File Downloader - Settings</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📁 Download Settings</h1>
+      <p class="subtitle">Configure where files are downloaded</p>
+    </div>
+
+    <div class="settings-card">
+      <div class="setting-group">
+        <label for="downloadPath" class="setting-label">
+          <span class="label-text">Download Directory</span>
+          <span class="help-text">Relative to your Downloads folder</span>
+        </label>
+
+        <div class="input-group">
+          <span class="prefix">~/Downloads/</span>
+          <input
+            type="text"
+            id="downloadPath"
+            placeholder="e.g., e-Disciplinas/SSC0534"
+            maxlength="200"
+          />
+        </div>
+
+        <div class="hint">
+          <p><strong>Example paths:</strong></p>
+          <ul>
+            <li><code>e-Disciplinas</code> → Downloads/e-Disciplinas/</li>
+            <li><code>courses/2025</code> → Downloads/courses/2025/</li>
+            <li><code>SSC0534/Aulas</code> → Downloads/SSC0534/Aulas/</li>
+            <li><code>.</code> → Downloads/ (default)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="createCourseFolder" checked>
+          <span class="checkbox-text">Create course subfolder</span>
+          <span class="help-text">Automatically create a folder with course code</span>
+        </label>
+        <p class="info">When enabled, files are organized like: <code>~/Downloads/[path]/[course-code]/</code></p>
+      </div>
+
+      <div class="button-group">
+        <button id="saveBtn" class="btn btn-primary">💾 Save Settings</button>
+        <button id="resetBtn" class="btn btn-secondary">↻ Reset to Default</button>
+      </div>
+
+      <div id="status" class="status hidden"></div>
+    </div>
+
+    <div class="info-card">
+      <h3>ℹ️ How It Works</h3>
+      <ul>
+        <li>Files are downloaded to the specified directory</li>
+        <li>Directory is created automatically if it doesn't exist</li>
+        <li>Settings are saved locally and persisted across browser sessions</li>
+        <li>You can change settings at any time</li>
+      </ul>
+    </div>
+
+    <div class="about">
+      <p>e-Disciplinas File Downloader <span id="version">v1.1</span></p>
+    </div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
