@@ -27,38 +27,62 @@
       return link.href && link.href.includes('/mod/resource/view.php');
     });
 
+    console.log(`[e-Disciplinas] Found ${fileLinks.length} resource links`);
+
     if (fileLinks.length === 0) {
       return 'No files found to download';
     }
 
     // Try to extract course code from page
     const courseCode = extractCourseCode();
+    console.log(`[e-Disciplinas] Course code: ${courseCode || 'Not found'}`);
 
     let downloadedCount = 0;
     let errors = [];
 
     // Process each file link
-    for (const link of fileLinks) {
+    for (let i = 0; i < fileLinks.length; i++) {
+      const link = fileLinks[i];
       try {
         // Get the file name from the link text
         const fileName = extractFileName(link);
         const resourceUrl = link.href;
+        
+        console.log(`[e-Disciplinas] [${i+1}/${fileLinks.length}] Processing: ${fileName}`);
+        console.log(`[e-Disciplinas] Resource URL: ${resourceUrl}`);
 
         // Fetch the resource view page with follow redirect
-        const response = await fetch(resourceUrl, { redirect: 'follow' });
+        let response;
+        try {
+          response = await fetch(resourceUrl, { redirect: 'follow' });
+        } catch (fetchError) {
+          throw new Error(`Fetch failed: ${fetchError.message}`);
+        }
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const html = await response.text();
+        console.log(`[e-Disciplinas] Received ${html.length} bytes, final URL: ${response.url}`);
 
         // The final URL after redirects is in response.url
         const fileUrl = extractFileUrl(html, response.url, resourceUrl);
 
         if (!fileUrl) {
-          errors.push(`Could not find file URL for ${fileName}`);
+          const err = `Could not find file URL for ${fileName}`;
+          console.warn(`[e-Disciplinas] ${err}`);
+          errors.push(err);
           continue;
         }
+
+        console.log(`[e-Disciplinas] File URL extracted: ${fileUrl}`);
 
         // Extract file extension from the URL
         const fileExtension = extractFileExtension(fileUrl);
         const fileNameWithExtension = fileExtension ? `${fileName}.${fileExtension}` : fileName;
+
+        console.log(`[e-Disciplinas] File extension: ${fileExtension || 'none'}, Final filename: ${fileNameWithExtension}`);
 
         // Trigger the download using Chrome's download API via background script
         await chrome.runtime.sendMessage({
@@ -68,18 +92,22 @@
           courseCode: courseCode
         });
 
+        console.log(`[e-Disciplinas] ✓ Download initiated for: ${fileNameWithExtension}`);
         downloadedCount++;
       } catch (error) {
-        errors.push(`Error processing file: ${error.message}`);
+        const errMsg = `Error processing file: ${error.message}`;
+        console.error(`[e-Disciplinas] ${errMsg}`);
+        errors.push(errMsg);
       }
     }
 
     // Build response message
     let message = `Initiated ${downloadedCount} file download(s)`;
     if (errors.length > 0) {
-      message += `\n\nErrors:\n${errors.join('\n')}`;
+      message += `\n\nErrors (${errors.length}):\n${errors.join('\n')}`;
     }
 
+    console.log(`[e-Disciplinas] Summary: ${message}`);
     return message;
   }
 
@@ -143,12 +171,14 @@
   function extractFileUrl(html, baseUrl, resourceUrl) {
     // Strategy 1: Check if the final URL (after redirects) is already the pluginfile URL
     if (baseUrl && baseUrl.includes('/pluginfile.php/')) {
+      console.log(`[e-Disciplinas] Strategy 1 matched: final URL is pluginfile`);
       return baseUrl;
     }
 
     // Strategy 2: Look for pluginfile.php URLs in the HTML with full protocol
     const pluginFileMatch = html.match(/(https:\/\/edisciplinas\.usp\.br\/pluginfile\.php\/[^"'\s<>()]+)/i);
     if (pluginFileMatch) {
+      console.log(`[e-Disciplinas] Strategy 2 matched: full protocol pluginfile URL`);
       return cleanUrl(pluginFileMatch[1]);
     }
 
@@ -157,6 +187,7 @@
     if (relativePluginMatch && baseUrl) {
       try {
         const url = new URL(relativePluginMatch[1], baseUrl);
+        console.log(`[e-Disciplinas] Strategy 3 matched: relative pluginfile URL`);
         return url.href;
       } catch (e) {
         console.error('URL construction failed:', e);
@@ -166,44 +197,52 @@
     // Strategy 4: Meta refresh tag
     const metaRefresh = html.match(/<meta\s+http-equiv=["']?refresh["']?\s+content=["']?[^"'>]*url=["']?([^"'<>\s)]+)/i);
     if (metaRefresh) {
+      console.log(`[e-Disciplinas] Strategy 4 matched: meta refresh tag`);
       return resolveUrl(metaRefresh[1], baseUrl);
     }
 
     // Strategy 5: JavaScript location.href
     const locationMatch = html.match(/(?:location\.href|window\.location\.href|document\.location)\s*=\s*["']([^"']+)['"]/i);
     if (locationMatch) {
+      console.log(`[e-Disciplinas] Strategy 5 matched: JavaScript location`);
       return resolveUrl(locationMatch[1], baseUrl);
     }
 
     // Strategy 6: data-attributes with URL
     const dataAttrMatch = html.match(/data-(?:href|src|url|file)=["']([^"'>]+pluginfile[^"'<>()]*)['"]/i);
     if (dataAttrMatch) {
+      console.log(`[e-Disciplinas] Strategy 6 matched: data attribute`);
       return resolveUrl(dataAttrMatch[1], baseUrl);
     }
 
     // Strategy 7: Download link in anchor tag
     const downloadMatch = html.match(/<a[^>]+href=["']([^"'>]*pluginfile[^"'<>()]*)['"]/i);
     if (downloadMatch) {
+      console.log(`[e-Disciplinas] Strategy 7 matched: anchor tag pluginfile link`);
       return resolveUrl(downloadMatch[1], baseUrl);
     }
 
     // Strategy 8: Direct file link (might be in src or other attributes)
     const directFileMatch = html.match(/(?:href|src|url)=["']([^"']*\.(?:pdf|doc|docx|xls|xlsx|ppt|pptx|zip|txt|jpg|png|gif|mp4)(?:\?[^"']*)?)['"]/i);
     if (directFileMatch) {
+      console.log(`[e-Disciplinas] Strategy 8 matched: direct file extension link`);
       return resolveUrl(directFileMatch[1], baseUrl);
     }
 
     // Strategy 9: Search for any HTTP URL containing pluginfile (more lenient)
     const anyPluginUrl = html.match(/(https?:\/\/[^\s"'<>]*pluginfile[^\s"'<>()]*)/i);
     if (anyPluginUrl) {
+      console.log(`[e-Disciplinas] Strategy 9 matched: any pluginfile URL`);
       return cleanUrl(anyPluginUrl[1]);
     }
 
     // If nothing found, return the resource page URL itself in case it's being hosted there
     if (baseUrl && baseUrl !== resourceUrl && baseUrl.includes('edisciplinas.usp.br')) {
+      console.log(`[e-Disciplinas] Using final response URL as fallback`);
       return baseUrl;
     }
 
+    console.log(`[e-Disciplinas] ✗ No extraction strategy matched`);
     return null;
   }
 
