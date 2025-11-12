@@ -278,8 +278,8 @@ For issues, feature requests, or questions:
 
 ---
 
-**Version**: 1.1.1  
-**Last Updated**: November 11, 2025  
+**Version**: 1.1.1
+**Last Updated**: November 11, 2025
 **Status**: ✅ Production Ready
 
 Made with ❤️ for USP students
