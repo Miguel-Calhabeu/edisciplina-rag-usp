@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 – Downloads sob medida
+- Adicionou um campo dedicado na página de configurações para o usuário escolher quais extensões de arquivos devem ser baixadas.
+- Persistiu a lista personalizada de extensões, validando entrada e oferecendo restauração para os valores padrão.
+- Atualizou o fluxo de coleta no content script para ignorar automaticamente arquivos fora da lista permitida e manter os contadores corretos.
+
 ## 1.3.0 – Experiência Instigante
 - Renomeou a extensão para **e-Disciplinas RAG USP** e localizou toda a interface, incluindo estados dinâmicos de progresso.
 - Redesenhou o pop-up e a página de configurações com foco em feedback imediato, templates de organização e design minimalista.

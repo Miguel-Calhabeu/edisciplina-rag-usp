@@ -3,7 +3,7 @@
 e-Disciplinas RAG USP é uma extensão para navegadores Chromium que captura todos os arquivos de um curso no Moodle da USP e os salva em uma estrutura organizada para fluxos de Retrieval-Augmented Generation (RAG). A experiência é totalmente localizada em português, com feedback visual no pop-up e notificações nativas que acompanham cada etapa do download.
 
 ## Recursos Principais
-- **Download inteligente em um clique** com detecção automática da disciplina e estados traduzidos (carregando, concluído, erro).
+- **Download inteligente em um clique** com detecção automática da disciplina, filtro por extensões autorizadas e estados traduzidos (carregando, concluído, erro).
 - **Feedback persistente** por meio de notificações do sistema via `chrome.notifications`, mesmo quando o pop-up fica escondido pela UI do navegador.
 - **Fluxo de extração resiliente** que segue redirecionamentos, interpreta páginas intermediárias e resolve recursos `pluginfile.php` do Moodle.
 - **Organização personalizável** com diretórios base configuráveis e modelos de nomenclatura que combinam código, nome da disciplina e seções.
@@ -37,6 +37,7 @@ Ao alterar o código, retorne para `chrome://extensions/` e clique em **Atualiza
 - Abra o pop-up e clique em **Configurações** (ou selecione **Opções** no card da extensão) para acessar a página dedicada.
 - Defina o **Diretório de download** relativo à pasta padrão de Downloads (exemplos: `e-Disciplinas`, `cursos/2026`, ou `.` para salvar diretamente em Downloads).
 - Escolha o **modelo de organização** na seção "Organização de arquivos" para combinar código da disciplina, nome da disciplina e seções do Moodle.
+- Liste as **Extensões permitidas** separadas por vírgula para controlar quais arquivos serão baixados (ex.: `pdf, txt, md`).
 - As preferências permanecem salvas via Chrome Storage API; use **Resetar padrão** para restaurar os valores originais.
 
 O caminho final de download segue o modelo selecionado, por exemplo:
