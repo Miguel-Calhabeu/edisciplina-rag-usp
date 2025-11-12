@@ -4,6 +4,11 @@
 (function() {
   'use strict';
 
+  const DEFAULT_ALLOWED_EXTENSIONS = [
+    'pdf', 'txt', 'md', '3g2', '3gp', 'aac', 'aif', 'aifc', 'aiff', 'amr', 'au', 'avi', 'cda', 'm4a',
+    'mid', 'mp3', 'mp4', 'mpeg', 'ogg', 'opus', 'ra', 'ram', 'snd', 'wav', 'wma'
+  ];
+
   // Listen for messages from the popup
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'downloadAllFiles') {
@@ -37,10 +42,15 @@
       throw new Error('Nenhum arquivo encontrado nesta página.');
     }
 
+    const allowedExtensions = await loadAllowedExtensions();
+    console.log(`[e-Disciplinas] Extensões permitidas: ${allowedExtensions.length ? allowedExtensions.join(', ') : 'todas'}`);
+
     const { courseCode, courseName } = getCourseInfo();
     console.log(`[e-Disciplinas] Curso detectado: ${courseCode || 'sem código'} — ${courseName || 'sem nome'}`);
 
     let downloadedCount = 0;
+    let processedCount = 0;
+    let skippedCount = 0;
     let errors = [];
 
     await notifyBackground('start', { total: fileLinks.length, courseCode, courseName });
@@ -137,9 +147,16 @@
 
         // Extract file extension from the URL
         const fileExtension = extractFileExtension(fileUrl);
+        const normalizedExtension = fileExtension ? fileExtension.toLowerCase() : null;
         const fileNameWithExtension = fileExtension ? `${fileName}.${fileExtension}` : fileName;
 
-        console.log(`[e-Disciplinas] Extensão: ${fileExtension || 'sem extensão'}, Nome final: ${fileNameWithExtension}`);
+        console.log(`[e-Disciplinas] Extensão: ${normalizedExtension || 'sem extensão'}, Nome final: ${fileNameWithExtension}`);
+
+        if (!isExtensionAllowed(normalizedExtension, allowedExtensions)) {
+          console.log(`[e-Disciplinas] Ignorando arquivo por extensão não permitida: ${normalizedExtension || 'desconhecida'}`);
+          skippedCount++;
+          continue;
+        }
 
         // Sanitize filename to remove invalid characters
         const sanitizedFilename = sanitizeFilename(fileNameWithExtension);
@@ -164,13 +181,6 @@
           if (downloadResponse && downloadResponse.success) {
             console.log(`[e-Disciplinas] ✓ Download iniciado: ${fileNameWithExtension}`);
             downloadedCount++;
-            notifyPopup('progress', { current: i + 1, total: fileLinks.length, courseName });
-            await notifyBackground('progress', {
-              current: i + 1,
-              total: fileLinks.length,
-              courseCode,
-              courseName
-            });
           } else {
             const bgError = downloadResponse ? downloadResponse.error : 'Unknown download error';
             console.error(`[e-Disciplinas] Falha no download: ${bgError}`);
@@ -185,12 +195,26 @@
         console.error(`[e-Disciplinas] ${errMsg}`);
         errors.push(errMsg);
       }
+      finally {
+        processedCount++;
+        notifyPopup('progress', { current: processedCount, total: fileLinks.length, courseName });
+        await notifyBackground('progress', {
+          current: processedCount,
+          total: fileLinks.length,
+          courseCode,
+          courseName
+        });
+      }
     }
 
     // Build response message
     let message = `Downloads iniciados para ${downloadedCount} arquivo(s).`;
     if (errors.length > 0) {
       message += `\n\nErros (${errors.length}):\n${errors.join('\n')}`;
+    }
+
+    if (skippedCount > 0) {
+      message += `\n\nIgnorados (${skippedCount}): extensões não permitidas.`;
     }
 
     console.log(`[e-Disciplinas] Resumo: ${message}`);
@@ -208,6 +232,54 @@
     }
 
     return { message, courseCode, courseName };
+  }
+
+  async function loadAllowedExtensions() {
+    try {
+      const result = await chrome.storage.local.get(['allowedExtensions']);
+      const normalized = normalizeExtensionsList(result.allowedExtensions);
+      if (normalized === null) {
+        return DEFAULT_ALLOWED_EXTENSIONS;
+      }
+      return normalized;
+    } catch (error) {
+      console.warn(`[e-Disciplinas] Falha ao carregar extensões permitidas: ${error.message}`);
+      return DEFAULT_ALLOWED_EXTENSIONS;
+    }
+  }
+
+  function normalizeExtensionsList(raw) {
+    if (raw === undefined || raw === null) {
+      return null;
+    }
+
+    if (Array.isArray(raw)) {
+      return sanitizeExtensionsList(raw);
+    }
+
+    if (typeof raw === 'string') {
+      return sanitizeExtensionsList(raw.split(','));
+    }
+
+    return [];
+  }
+
+  function sanitizeExtensionsList(list) {
+    return Array.from(new Set(list
+      .map(ext => String(ext).trim().replace(/^\./, '').toLowerCase())
+      .filter(ext => ext.length > 0 && /^[a-z0-9]+$/.test(ext))));
+  }
+
+  function isExtensionAllowed(extension, allowedList) {
+    if (!Array.isArray(allowedList) || allowedList.length === 0) {
+      return true;
+    }
+
+    if (!extension) {
+      return false;
+    }
+
+    return allowedList.includes(extension.toLowerCase());
   }
 
   /**

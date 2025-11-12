@@ -153,6 +153,16 @@ body {
   background: transparent;
 }
 
+.text-input {
+  flex: 1;
+  padding: 14px 16px;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  background: transparent;
+  font-family: inherit;
+}
+
 .helper {
   font-size: 13px;
   color: var(--subtle);
