@@ -59,18 +59,46 @@
         // Fetch the resource view page with follow redirect
         let response;
         let html;
+        const FETCH_TIMEOUT = 15000; // 15 second timeout
+        
         try {
-          // First try with automatic redirect following
-          response = await fetch(resourceUrl, { redirect: 'follow' });
+          // Create an AbortController for timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+          
+          try {
+            // First try with automatic redirect following
+            response = await fetch(resourceUrl, { 
+              redirect: 'follow',
+              signal: controller.signal 
+            });
+            clearTimeout(timeoutId);
+          } catch (fetchError) {
+            clearTimeout(timeoutId);
+            if (fetchError.name === 'AbortError') {
+              throw new Error(`Timeout after ${FETCH_TIMEOUT}ms`);
+            }
+            throw fetchError;
+          }
+          
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
+          
           html = await response.text();
         } catch (fetchError) {
           // If normal fetch fails, try manual follow of redirects (for edge cases)
           console.warn(`[e-Disciplinas] Fetch with redirect failed: ${fetchError.message}`);
           try {
-            response = await fetch(resourceUrl, { redirect: 'manual' });
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+            
+            response = await fetch(resourceUrl, { 
+              redirect: 'manual',
+              signal: controller.signal 
+            });
+            clearTimeout(timeoutId);
+            
             const redirectLocation = response.headers.get('location');
             if (redirectLocation) {
               console.log(`[e-Disciplinas] Got manual redirect to: ${redirectLocation}`);
