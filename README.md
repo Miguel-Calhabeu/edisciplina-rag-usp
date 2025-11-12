@@ -65,6 +65,4 @@ If no course code is detected or the toggle is disabled, the `<course code>` seg
 
 ## Development Tips
 - Keep DevTools open while iterating so you can see real-time logs from both scripts.
-- The repository ships with `test_moodle_fetch.js`, which can be executed in the browser console to replicate fetch logic on problematic resources.
-- After modifying any file inside `chrome-extension/`, reload the extension before testing again.
 - Contributions should update the changelog when behavior changes or significant bugs are resolved.
