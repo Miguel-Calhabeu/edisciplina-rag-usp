@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0 – Experiência Instigante
+- Renomeou a extensão para **e-Disciplinas RAG USP** e localizou toda a interface, incluindo estados dinâmicos de progresso.
+- Redesenhou o pop-up e a página de configurações com foco em feedback imediato, templates de organização e design minimalista.
+- Adicionou notificações nativas pelo `chrome.notifications` para informar início, sucesso ou falha dos downloads mesmo com o pop-up fechado.
+
 ## 1.2.2 – Filename Sanitization
 - Strip Chrome-prohibited characters (such as colons, pipes, and parentheses) before initiating downloads so every queued file succeeds.
 - Added console messaging that shows the original and cleaned filename for easier troubleshooting.

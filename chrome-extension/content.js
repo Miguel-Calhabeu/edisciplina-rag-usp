@@ -1,5 +1,5 @@
-// Content script for e-Disciplinas File Downloader
-// This script runs on course pages and provides file downloading functionality
+// Content script for e-Disciplinas RAG USP
+// Este script roda nas páginas de disciplina do e-Disciplinas e organiza os downloads
 
 (function() {
   'use strict';
@@ -8,11 +8,15 @@
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'downloadAllFiles') {
       downloadAllFiles().then(result => {
-        sendResponse({ success: true, message: result });
+        sendResponse({ success: true, ...result });
       }).catch(error => {
         sendResponse({ success: false, message: error.message });
       });
       return true; // Will respond asynchronously
+    } else if (request.action === 'getCourseInfo') {
+      const info = getCourseInfo();
+      sendResponse(info);
+      return true;
     }
   });
 
@@ -27,18 +31,20 @@
       return link.href && link.href.includes('/mod/resource/view.php');
     });
 
-    console.log(`[e-Disciplinas] Found ${fileLinks.length} resource links`);
+    console.log(`[e-Disciplinas] Encontrados ${fileLinks.length} links de recurso`);
 
     if (fileLinks.length === 0) {
-      return 'No files found to download';
+      throw new Error('Nenhum arquivo encontrado nesta página.');
     }
 
-    // Try to extract course code from page
-    const courseCode = extractCourseCode();
-    console.log(`[e-Disciplinas] Course code: ${courseCode || 'Not found'}`);
+    const { courseCode, courseName } = getCourseInfo();
+    console.log(`[e-Disciplinas] Curso detectado: ${courseCode || 'sem código'} — ${courseName || 'sem nome'}`);
 
     let downloadedCount = 0;
     let errors = [];
+
+    await notifyBackground('start', { total: fileLinks.length, courseCode, courseName });
+    notifyPopup('progress', { current: 0, total: fileLinks.length, courseName });
 
     // Process each file link with a small delay between requests to avoid rate limiting
     for (let i = 0; i < fileLinks.length; i++) {
@@ -53,7 +59,7 @@
         const fileName = extractFileName(link);
         const resourceUrl = link.href;
 
-        console.log(`[e-Disciplinas] [${i+1}/${fileLinks.length}] Processing: ${fileName}`);
+        console.log(`[e-Disciplinas] [${i+1}/${fileLinks.length}] Processando: ${fileName}`);
         console.log(`[e-Disciplinas] Resource URL: ${resourceUrl}`);
 
         // Fetch the resource view page with follow redirect
@@ -76,70 +82,73 @@
           } catch (fetchError) {
             clearTimeout(timeoutId);
             if (fetchError.name === 'AbortError') {
-              throw new Error(`Timeout after ${FETCH_TIMEOUT}ms`);
-            }
-            throw fetchError;
+            throw new Error(`Tempo esgotado após ${FETCH_TIMEOUT}ms`);
           }
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-
-          html = await response.text();
-        } catch (fetchError) {
-          // If normal fetch fails, try manual follow of redirects (for edge cases)
-          console.warn(`[e-Disciplinas] Fetch with redirect failed: ${fetchError.message}`);
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
-
-            response = await fetch(resourceUrl, {
-              redirect: 'manual',
-              signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            const redirectLocation = response.headers.get('location');
-            if (redirectLocation) {
-              console.log(`[e-Disciplinas] Got manual redirect to: ${redirectLocation}`);
-              response = await fetch(redirectLocation);
-              if (!response.ok) {
-                throw new Error(`HTTP ${response.status} on redirect`);
-              }
-              html = await response.text();
-            } else {
-              throw fetchError; // Re-throw original error if no redirect header
-            }
-          } catch (manualError) {
-            throw new Error(`Fetch failed: ${manualError.message}`);
-          }
+          throw fetchError;
         }
 
-        console.log(`[e-Disciplinas] Received ${html.length} bytes, final URL: ${response.url}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        html = await response.text();
+      } catch (fetchError) {
+        // If normal fetch fails, try manual follow of redirects (for edge cases)
+        console.warn(`[e-Disciplinas] Falha ao seguir redirecionamento: ${fetchError.message}`);
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+          response = await fetch(resourceUrl, {
+            redirect: 'manual',
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          const redirectLocation = response.headers.get('location');
+          if (redirectLocation) {
+            console.log(`[e-Disciplinas] Redirecionamento manual para: ${redirectLocation}`);
+            response = await fetch(redirectLocation);
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status} ao seguir redirecionamento`);
+            }
+            html = await response.text();
+          } else {
+            throw fetchError; // Re-throw original error if no redirect header
+          }
+        } catch (manualError) {
+          throw new Error(`Falha ao buscar arquivo: ${manualError.message}`);
+        }
+      }
+
+        console.log(`[e-Disciplinas] Recebidos ${html.length} bytes, URL final: ${response.url}`);
 
         // The final URL after redirects is in response.url
         const fileUrl = extractFileUrl(html, response.url, resourceUrl);
 
         if (!fileUrl) {
-          const err = `Could not find file URL for ${fileName}`;
+          const err = `Não foi possível encontrar o link do arquivo ${fileName}`;
           console.warn(`[e-Disciplinas] ${err}`);
           errors.push(err);
           continue;
         }
 
-        console.log(`[e-Disciplinas] File URL extracted: ${fileUrl}`);
+        console.log(`[e-Disciplinas] Link do arquivo extraído: ${fileUrl}`);
 
         // Extract file extension from the URL
         const fileExtension = extractFileExtension(fileUrl);
         const fileNameWithExtension = fileExtension ? `${fileName}.${fileExtension}` : fileName;
 
-        console.log(`[e-Disciplinas] File extension: ${fileExtension || 'none'}, Final filename: ${fileNameWithExtension}`);
+        console.log(`[e-Disciplinas] Extensão: ${fileExtension || 'sem extensão'}, Nome final: ${fileNameWithExtension}`);
 
         // Sanitize filename to remove invalid characters
         const sanitizedFilename = sanitizeFilename(fileNameWithExtension);
         if (sanitizedFilename !== fileNameWithExtension) {
-          console.log(`[e-Disciplinas] Filename sanitized: ${fileNameWithExtension} → ${sanitizedFilename}`);
+          console.log(`[e-Disciplinas] Nome sanitizado: ${fileNameWithExtension} → ${sanitizedFilename}`);
         }
+
+        const sectionName = extractSectionName(link);
+        const sanitizedSection = sectionName ? sanitizePathPart(sectionName) : null;
 
         // Trigger the download using Chrome's download API via background script
         try {
@@ -147,36 +156,58 @@
             action: 'downloadFile',
             url: fileUrl,
             filename: sanitizedFilename,
-            courseCode: courseCode
+            courseCode: courseCode,
+            courseName: courseName,
+            sectionName: sanitizedSection
           });
 
           if (downloadResponse && downloadResponse.success) {
-            console.log(`[e-Disciplinas] ✓ Download initiated for: ${fileNameWithExtension}`);
+            console.log(`[e-Disciplinas] ✓ Download iniciado: ${fileNameWithExtension}`);
             downloadedCount++;
+            notifyPopup('progress', { current: i + 1, total: fileLinks.length, courseName });
+            await notifyBackground('progress', {
+              current: i + 1,
+              total: fileLinks.length,
+              courseCode,
+              courseName
+            });
           } else {
             const bgError = downloadResponse ? downloadResponse.error : 'Unknown download error';
-            console.error(`[e-Disciplinas] Download failed: ${bgError}`);
-            errors.push(`Download failed for ${fileNameWithExtension}: ${bgError}`);
+            console.error(`[e-Disciplinas] Falha no download: ${bgError}`);
+            errors.push(`Download falhou para ${fileNameWithExtension}: ${bgError}`);
           }
         } catch (downloadError) {
-          console.error(`[e-Disciplinas] Failed to send download message: ${downloadError.message}`);
-          errors.push(`Failed to trigger download for ${fileNameWithExtension}`);
+          console.error(`[e-Disciplinas] Erro ao solicitar download: ${downloadError.message}`);
+          errors.push(`Não foi possível iniciar ${fileNameWithExtension}`);
         }
       } catch (error) {
-        const errMsg = `Error processing file: ${error.message}`;
+        const errMsg = `Erro ao processar arquivo: ${error.message}`;
         console.error(`[e-Disciplinas] ${errMsg}`);
         errors.push(errMsg);
       }
     }
 
     // Build response message
-    let message = `Initiated ${downloadedCount} file download(s)`;
+    let message = `Downloads iniciados para ${downloadedCount} arquivo(s).`;
     if (errors.length > 0) {
-      message += `\n\nErrors (${errors.length}):\n${errors.join('\n')}`;
+      message += `\n\nErros (${errors.length}):\n${errors.join('\n')}`;
     }
 
-    console.log(`[e-Disciplinas] Summary: ${message}`);
-    return message;
+    console.log(`[e-Disciplinas] Resumo: ${message}`);
+
+    if (errors.length > 0) {
+      notifyPopup('error', { message });
+      await notifyBackground('error', { courseName, courseCode, errors });
+    } else {
+      notifyPopup('complete', { message });
+      await notifyBackground('complete', {
+        total: fileLinks.length,
+        courseCode,
+        courseName
+      });
+    }
+
+    return { message, courseCode, courseName };
   }
 
   /**
@@ -218,6 +249,14 @@
     sanitized = sanitized.replace(/^_|_$/g, '');  // Remove leading/trailing underscores
 
     return sanitized || 'file';
+  }
+
+  function sanitizePathPart(name) {
+    if (!name) return '';
+    return name
+      .replace(/[\\/:*?"<>|]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   /**
@@ -402,6 +441,79 @@
 
     // Default fallback
     return null;
-  }  // Make the function available globally for debugging
+  }
+
+  function extractCourseName() {
+    const heading = document.querySelector('.page-header h1, .page-header-headings h1, .page-title, .header-main h1');
+    if (heading) {
+      return heading.textContent.trim();
+    }
+
+    const breadcrumb = document.querySelector('.breadcrumb-item.current, .breadcrumb-last');
+    if (breadcrumb) {
+      return breadcrumb.textContent.trim();
+    }
+
+    const title = document.title.replace(/^Curso:\s*/i, '').trim();
+    return title || null;
+  }
+
+  function extractSectionName(link) {
+    const activity = link.closest('.activity, li.activity');
+    if (!activity) {
+      return null;
+    }
+
+    const section = activity.closest('li.section, li.topic, section[class*="course-section"], .course-section');
+    if (section) {
+      const sectionHeading = section.querySelector('.sectionname, .section-title, h3.sectionname, h3.section-title, header h3');
+      if (sectionHeading) {
+        return sectionHeading.textContent.trim();
+      }
+    }
+
+    const heading = activity.querySelector('.sectionname, .section-title');
+    if (heading) {
+      return heading.textContent.trim();
+    }
+
+    return null;
+  }
+
+  function getCourseInfo() {
+    const courseCode = extractCourseCode();
+    const courseName = extractCourseName();
+    return {
+      found: Boolean(courseName || courseCode),
+      courseCode: courseCode || null,
+      courseName: courseName || 'Disciplina não identificada'
+    };
+  }
+
+  async function notifyBackground(status, payload) {
+    try {
+      await chrome.runtime.sendMessage({
+        action: 'downloadStatus',
+        status,
+        payload
+      });
+    } catch (err) {
+      console.debug('[e-Disciplinas] Notificação de plano de fundo indisponível:', err?.message);
+    }
+  }
+
+  function notifyPopup(type, payload) {
+    try {
+      chrome.runtime.sendMessage({
+        context: 'popup',
+        type,
+        payload
+      }, () => void chrome.runtime.lastError);
+    } catch (error) {
+      // Popup pode não estar aberto; ignore silenciosamente
+    }
+  }
+
+  // Make the function available globally for debugging
   window.edisciplinasDownloadAllFiles = downloadAllFiles;
 })();

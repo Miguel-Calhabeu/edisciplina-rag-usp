@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "e-Disciplinas File Downloader",
-  "version": "1.2.2",
-  "description": "Download all files from e-Disciplinas course pages with custom organization",
+  "name": "e-Disciplinas RAG USP",
+  "version": "1.3.0",
+  "description": "Baixe arquivos do Moodle da USP com organização otimizada para fluxos RAG",
   "permissions": [
     "activeTab",
     "scripting",
     "downloads",
-    "storage"
+    "storage",
+    "notifications"
   ],
   "host_permissions": [
     "https://edisciplinas.usp.br/*"
@@ -18,7 +19,7 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon.png",
-    "default_title": "e-Disciplinas File Downloader"
+    "default_title": "e-Disciplinas RAG USP"
   },
   "options_page": "settings.html",
   "content_scripts": [

@@ -3,29 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>e-Disciplinas File Downloader</title>
+  <title>e-Disciplinas RAG USP</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>📥 File Downloader</h1>
-      <button id="settingsBtn" class="settings-btn" title="Open settings">⚙️</button>
-    </div>
-    <p class="info">Download all files from this course page</p>
+  <main class="surface">
+    <header class="header">
+      <div class="identity">
+        <div class="badge" aria-hidden="true">
+          <span>RAG</span>
+        </div>
+        <div class="identity-text">
+          <h1>e-Disciplinas RAG</h1>
+          <p class="subtitle">Exportador inteligente para o Moodle USP</p>
+        </div>
+      </div>
+    </header>
 
-    <button id="downloadBtn" class="btn btn-primary">Download All Files</button>
+    <section class="context">
+      <p class="context-label">Baixar arquivos de:</p>
+      <p id="courseName" class="context-value">Detectando disciplina…</p>
+      <p id="courseCode" class="context-meta hidden"></p>
+    </section>
 
-    <div id="status" class="status hidden"></div>
-    <div id="loading" class="loading hidden">
-      <div class="spinner"></div>
-      <p>Processing...</p>
+    <button id="downloadBtn" class="btn btn-primary" type="button">
+      Baixar arquivos da disciplina
+    </button>
+
+    <div id="progressBlock" class="progress-block hidden" aria-live="polite" aria-hidden="true">
+      <div class="progress-label" id="progressLabel">Preparando downloads…</div>
+      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
     </div>
 
-    <div class="footer">
-      <a href="settings.html" id="settingsLink" class="footer-link">⚙️ Settings</a>
-    </div>
-  </div>
+    <div id="status" class="status hidden" role="status"></div>
+
+    <footer class="footer">
+      <button id="settingsLink" class="footer-link" type="button">⚙️ Configurações</button>
+    </footer>
+  </main>
 
   <script src="popup.js"></script>
 </body>

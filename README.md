@@ -1,68 +1,69 @@
-# e-Disciplinas File Downloader
+# e-Disciplinas RAG USP
 
-The e-Disciplinas File Downloader is a Chrome extension that grabs every resource file from an e-Disciplinas/Moodle course page and saves the downloads in an organized folder structure. It was built to reduce manual downloads for USP students while keeping filenames and directories predictable.
+e-Disciplinas RAG USP é uma extensão para navegadores Chromium que captura todos os arquivos de um curso no Moodle da USP e os salva em uma estrutura organizada para fluxos de Retrieval-Augmented Generation (RAG). A experiência é totalmente localizada em português, com feedback visual no pop-up e notificações nativas que acompanham cada etapa do download.
 
-## Key Features
-- **One click bulk download** for all resources discovered on the current course page.
-- **Nine-step URL extraction pipeline** that follows redirects, parses HTML responses, and resolves relative paths to reach protected `pluginfile.php` assets.
-- **Persistent download preferences** stored with the Chrome Storage API, including a custom root directory and optional course-code subfolders.
-- **Automatic filename cleanup** that preserves original extensions, normalizes casing, and removes characters that Chrome blocks.
-- **Actionable debugging logs** in both the page console and the service worker to track progress and diagnose failures quickly.
+## Recursos Principais
+- **Download inteligente em um clique** com detecção automática da disciplina e estados traduzidos (carregando, concluído, erro).
+- **Feedback persistente** por meio de notificações do sistema via `chrome.notifications`, mesmo quando o pop-up fica escondido pela UI do navegador.
+- **Fluxo de extração resiliente** que segue redirecionamentos, interpreta páginas intermediárias e resolve recursos `pluginfile.php` do Moodle.
+- **Organização personalizável** com diretórios base configuráveis e modelos de nomenclatura que combinam código, nome da disciplina e seções.
+- **Sanitização avançada de nomes de arquivos** que preserva extensões originais e remove caracteres bloqueados pelo Chrome.
+- **Logs detalhados** no console da página e do service worker para depuração rápida.
 
-## Repository Layout
+## Estrutura do Repositório
 ```
 chrome-extension/
-├── background.js        # Service worker that builds download paths and calls the Chrome downloads API
-├── content.js           # Scans course pages, extracts resource URLs, and coordinates downloads
-├── popup.{html,css,js}  # User interface for triggering downloads and opening settings
-├── settings.{html,css,js} # Options page that captures download path preferences
-└── manifest.json        # Chrome Manifest V3 configuration
+├── background.js        # Service worker que orquestra downloads e notificações
+├── content.js           # Coleta links do Moodle e solicita o download de cada recurso
+├── popup.{html,css,js}  # Interface principal de disparo e feedback de progresso
+├── settings.{html,css,js} # Página de configurações com preferências e templates
+└── manifest.json        # Configuração do Manifest V3
 
-documentation/
-├── README.md            # This guide
-└── CHANGELOG.md         # Release history and notable fixes
+README.md                # Este guia
+CHANGELOG.md             # Histórico de versões
 ```
 
-## Getting Started
-1. Open `chrome://extensions/` in a Chromium-based browser (Chrome, Edge, Brave).
-2. Enable **Developer mode** using the toggle in the top-right corner.
-3. Click **Load unpacked** and select the repository's `chrome-extension` folder.
-4. Confirm that the "e-Disciplinas File Downloader" tile appears and the toolbar icon is visible.
-5. Visit an e-Disciplinas course page and press **Download All Files** in the popup. Files are saved under `~/Downloads/e-Disciplinas/<CourseCode>/` by default.
+## Como instalar
+1. Abra `chrome://extensions/` em um navegador baseado em Chromium (Chrome, Edge, Brave).
+2. Ative o **Modo desenvolvedor** usando o controle no canto superior direito.
+3. Clique em **Carregar sem compactação** e selecione a pasta `chrome-extension` deste repositório.
+4. Confirme que o card "e-Disciplinas RAG USP" aparece e o ícone fica visível na barra de ferramentas.
+5. Acesse uma página de curso no e-Disciplinas e pressione **Baixar arquivos da disciplina** no pop-up. Os arquivos são salvos, por padrão, em `~/Downloads/e-Disciplinas/<Código>/`.
 
-### Updating the Extension
-When the code changes, return to `chrome://extensions/` and click the **Reload (↻)** button on the extension card. You can also remove and re-load the folder if Chrome reports errors after an update.
+### Atualizando a extensão
+Ao alterar o código, retorne para `chrome://extensions/` e clique em **Atualizar (↻)** no card da extensão. Caso o Chrome reporte algum erro após uma atualização, remova e carregue a pasta novamente.
 
-## Configuration & Organization
-- Open the popup and click the ⚙️ icon (or choose **Options** from the extension card) to reach the settings page.
-- Set a **Download path** relative to your default Downloads folder (examples: `e-Disciplinas`, `courses/2025`, or `.` to drop files directly in Downloads).
-- Toggle **Create course folder** to decide whether the detected course code (e.g., `SSC0534`) becomes a subfolder.
-- Settings persist across sessions; use **Reset to Defaults** if you need to restore the standard configuration.
+## Configuração e organização
+- Abra o pop-up e clique em **Configurações** (ou selecione **Opções** no card da extensão) para acessar a página dedicada.
+- Defina o **Diretório de download** relativo à pasta padrão de Downloads (exemplos: `e-Disciplinas`, `cursos/2026`, ou `.` para salvar diretamente em Downloads).
+- Escolha o **modelo de organização** na seção "Organização de arquivos" para combinar código da disciplina, nome da disciplina e seções do Moodle.
+- As preferências permanecem salvas via Chrome Storage API; use **Resetar padrão** para restaurar os valores originais.
 
-The resulting download path follows this template:
+O caminho final de download segue o modelo selecionado, por exemplo:
 ```
-~/Downloads/<custom path>/<course code>/<filename>.<extension>
+~/Downloads/<diretório personalizado>/<código>/<arquivo>.<extensão>
 ```
-If no course code is detected or the toggle is disabled, the `<course code>` segment is omitted.
+Se nenhum código for detectado, o segmento correspondente é omitido automaticamente.
 
-## How Downloads Work
-1. The **content script** scans the page for Moodle resource links (`a.aalink.stretched-link`).
-2. For each resource, it fetches the intermediate page and runs a **nine-strategy extractor**, checking for redirects, meta refresh tags, JavaScript assignments, `data-*` attributes, anchor links, explicit file extensions, and generic `pluginfile.php` matches.
-3. Successful matches are cleaned to remove query strings, resolve relative URLs, and preserve the correct file extension.
-4. Filenames are sanitized so Chrome accepts them (colons, slashes, pipes, and similar characters are replaced).
-5. The **service worker** loads stored preferences, assembles the final path, and calls `chrome.downloads.download`.
-6. Progress and errors are logged with `[e-Disciplinas]` (page) and `[e-Disciplinas BG]` (background) prefixes for quick diagnosis.
+## Como os downloads funcionam
+1. O **content script** identifica links de recursos (`a.aalink.stretched-link`) em cada curso e coleta os URLs intermediários.
+2. Cada URL passa por uma estratégia de extração em nove etapas que segue redirecionamentos, lê tags HTML e busca arquivos `pluginfile.php`.
+3. As correspondências válidas são normalizadas para preservar extensões e remover parâmetros desnecessários.
+4. O **service worker** carrega as preferências salvas, monta o caminho final e chama `chrome.downloads.download`.
+5. O pop-up atualiza o botão principal com estados como "Baixando..." e "Download concluído" conforme o progresso recebido.
+6. Notificações nativas sinalizam início, sucesso ou erro para que o usuário acompanhe o processo mesmo fora do pop-up.
+7. Logs com os prefixos `[e-Disciplinas]` (página) e `[e-Disciplinas BG]` (background) ajudam na depuração.
 
-## Troubleshooting
-1. Open DevTools (**F12**) on the course page and watch the **Console** for `[e-Disciplinas]` messages. They reveal which extraction strategy matched and whether a download was queued.
-2. From `chrome://extensions/`, click the **Service worker** link under the extension and inspect the console there for `[e-Disciplinas BG]` logs about file paths and Chrome download responses.
-3. Common issues:
-   - **"No files found"** – verify you are on a course page that contains resources using the Moodle `aalink` markup.
-   - **"Could not find file URL"** – the Moodle instance returned an unexpected HTML structure or requires additional authentication; capture the logged HTML snippet for investigation.
-   - **Timeout messages** – slow responses exceeded the 8-second fetch limit; retry or check connectivity.
-   - **"Invalid filename" errors** – confirm you are running version 1.2.2 or later so sanitization is applied.
-4. For deeper insight, run `await window.edisciplinasDebugFiles();` in the course page console to print the detected URLs and extraction results.
+## Solução de problemas
+1. Abra o DevTools (**F12**) na página do curso e acompanhe as mensagens `[e-Disciplinas]` no console para entender quais estratégias foram acionadas.
+2. Em `chrome://extensions/`, clique em **Service worker** na extensão e observe os logs `[e-Disciplinas BG]` sobre caminhos de arquivos e respostas do Chrome.
+3. Problemas comuns:
+   - **"Nenhum arquivo encontrado"** – verifique se você está em uma página de curso que contenha recursos com a marcação `aalink` do Moodle.
+   - **"Não foi possível encontrar o arquivo"** – a página retornou uma estrutura HTML inesperada ou exige autenticação adicional; capture o trecho exibido nos logs para análise.
+   - **Mensagens de timeout** – respostas lentas excederam o limite de 8 segundos; tente novamente ou confira a conexão.
+   - **Erros de nome inválido** – confirme que você está usando a versão 1.3.0 ou superior, que aplica sanitização e modelos atualizados.
+4. Para mais detalhes, execute `await window.edisciplinasDebugFiles();` no console da página do curso e inspecione os URLs detectados.
 
-## Development Tips
-- Keep DevTools open while iterating so you can see real-time logs from both scripts.
-- Contributions should update the changelog when behavior changes or significant bugs are resolved.
+## Dicas de desenvolvimento
+- Mantenha o DevTools aberto durante o desenvolvimento para acompanhar logs em tempo real dos scripts de conteúdo e background.
+- Antes de abrir um PR, atualize o changelog descrevendo as mudanças relevantes de comportamento.

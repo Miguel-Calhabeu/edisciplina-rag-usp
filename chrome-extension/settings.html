@@ -1,77 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>e-Disciplinas File Downloader - Settings</title>
+  <title>Configurações • e-Disciplinas RAG USP</title>
   <link rel="stylesheet" href="settings.css">
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>📁 Download Settings</h1>
-      <p class="subtitle">Configure where files are downloaded</p>
-    </div>
+  <main class="page">
+    <header class="page-header">
+      <div class="header-title">
+        <div class="header-icon" aria-hidden="true">
+          <span>⚡️</span>
+        </div>
+        <div>
+          <h1>Configurações do exportador</h1>
+          <p class="header-subtitle">Personalize como os arquivos do Moodle USP são organizados para o seu fluxo RAG.</p>
+        </div>
+      </div>
+      <span id="version" class="version">v1.0.0</span>
+    </header>
 
-    <div class="settings-card">
-      <div class="setting-group">
-        <label for="downloadPath" class="setting-label">
-          <span class="label-text">Download Directory</span>
-          <span class="help-text">Relative to your Downloads folder</span>
-        </label>
+    <section class="card">
+      <div class="card-header">
+        <h2>Diretório de download</h2>
+        <p>Defina onde os arquivos serão salvos dentro da sua pasta <code>~/Downloads</code>.</p>
+      </div>
 
-        <div class="input-group">
-          <span class="prefix">~/Downloads/</span>
+      <div class="form-group">
+        <label for="downloadPath" class="label">Subpasta padrão</label>
+        <div class="input-wrapper">
+          <span class="input-prefix">~/Downloads/</span>
           <input
             type="text"
             id="downloadPath"
-            placeholder="e.g., e-Disciplinas/SSC0534"
+            placeholder="ex.: RAG/e-Disciplinas"
             maxlength="200"
           />
         </div>
+        <p class="helper">Use apenas letras, números, hífen, underline, ponto e barras (/). Utilize <code>.</code> para salvar direto em <code>~/Downloads</code>.</p>
+      </div>
 
-        <div class="hint">
-          <p><strong>Example paths:</strong></p>
-          <ul>
-            <li><code>e-Disciplinas</code> → Downloads/e-Disciplinas/</li>
-            <li><code>courses/2025</code> → Downloads/courses/2025/</li>
-            <li><code>SSC0534/Aulas</code> → Downloads/SSC0534/Aulas/</li>
-            <li><code>.</code> → Downloads/ (default)</li>
-          </ul>
+      <div class="form-group inline">
+        <label class="checkbox">
+          <input type="checkbox" id="createCourseFolder" checked>
+          <span>Criar subpasta automaticamente quando houver código da disciplina</span>
+        </label>
+        <p class="helper">Exemplo de resultado: <code>~/Downloads/[subpasta]/SSC0123/arquivo.pdf</code></p>
+      </div>
+
+      <div class="form-group">
+        <h3>Organização dos arquivos</h3>
+        <p class="helper">Escolha a estrutura que melhor conversa com o seu pipeline de ingestão.</p>
+        <div class="option-grid" id="namingOptions">
+          <label class="option">
+            <input type="radio" name="namingStructure" value="code-section-file">
+            <div class="option-body">
+              <strong>[Código]/[Seção]/[Arquivo]</strong>
+              <p>Cria uma pasta por disciplina e por seção da página. Ideal para dividir por tópicos de aula.</p>
+            </div>
+          </label>
+
+          <label class="option">
+            <input type="radio" name="namingStructure" value="code-file" checked>
+            <div class="option-body">
+              <strong>[Código]/[Arquivo]</strong>
+              <p>Organização compacta: todos os arquivos ficam dentro da pasta da disciplina.</p>
+            </div>
+          </label>
+
+          <label class="option">
+            <input type="radio" name="namingStructure" value="discipline-file">
+            <div class="option-body">
+              <strong>[Nome da disciplina]/[Arquivo]</strong>
+              <p>Usa o nome completo da disciplina, perfeito para coleções com códigos variados.</p>
+            </div>
+          </label>
         </div>
       </div>
 
-      <div class="setting-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="createCourseFolder" checked>
-          <span class="checkbox-text">Create course subfolder</span>
-          <span class="help-text">Automatically create a folder with course code</span>
-        </label>
-        <p class="info">When enabled, files are organized like: <code>~/Downloads/[path]/[course-code]/</code></p>
+      <div class="actions">
+        <button id="resetBtn" class="btn btn-secondary" type="button">Redefinir padrão</button>
+        <button id="saveBtn" class="btn btn-primary" type="button">Salvar configurações</button>
       </div>
 
-      <div class="button-group">
-        <button id="saveBtn" class="btn btn-primary">💾 Save Settings</button>
-        <button id="resetBtn" class="btn btn-secondary">↻ Reset to Default</button>
-      </div>
+      <div id="status" class="status hidden" role="status"></div>
+    </section>
 
-      <div id="status" class="status hidden"></div>
-    </div>
-
-    <div class="info-card">
-      <h3>ℹ️ How It Works</h3>
-      <ul>
-        <li>Files are downloaded to the specified directory</li>
-        <li>Directory is created automatically if it doesn't exist</li>
-        <li>Settings are saved locally and persisted across browser sessions</li>
-        <li>You can change settings at any time</li>
+    <section class="card info-card">
+      <h2>Como funciona</h2>
+      <ul class="info-list">
+        <li>
+          <span class="info-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7.5V18a2 2 0 0 0 2 2h6" />
+              <path d="M21 9V6a2 2 0 0 0-2-2h-5l-3 3v4" />
+              <path d="M21 9h-7a2 2 0 0 0-2 2v9l3-3h6a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2Z" />
+            </svg>
+          </span>
+          <span>Os arquivos são enviados diretamente para o diretório configurado.</span>
+        </li>
+        <li>
+          <span class="info-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 11a7 7 0 0 1 14 0v5" />
+              <path d="M7 21h10" />
+              <path d="M12 17v4" />
+              <path d="m9 11 3 3 3-3" />
+            </svg>
+          </span>
+          <span>Pastas são criadas automaticamente quando ainda não existem.</span>
+        </li>
+        <li>
+          <span class="info-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16v16H4z" />
+              <path d="M9 4v16" />
+              <path d="M4 9h16" />
+            </svg>
+          </span>
+          <span>As preferências ficam salvas localmente no navegador.</span>
+        </li>
+        <li>
+          <span class="info-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m7 11 2-2 2 2" />
+              <path d="M9 7v12" />
+              <path d="m17 13-2 2-2-2" />
+              <path d="M15 5v14" />
+            </svg>
+          </span>
+          <span>Ajuste tudo quando quiser — o popup usa essas definições em tempo real.</span>
+        </li>
       </ul>
-    </div>
-
-    <div class="about">
-      <p>e-Disciplinas File Downloader <span id="version">v1.1</span></p>
-    </div>
-  </div>
+    </section>
+  </main>
 
   <script src="settings.js"></script>
 </body>
